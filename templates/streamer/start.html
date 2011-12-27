@@ -1,0 +1,98 @@
+<html>
+<head>
+<title>New Stream</title>
+<link rel="stylesheet" type="text/css" href="/static/style.css" />
+<script type="text/javascript" src="/static/jquery-1.6.js"></script>
+<script>
+    function refreshBoxes() {
+        // Hide All Boxes
+        $("#filesWrapper").hide();
+        $("#channelsWrapper").hide();
+        $("#destinationsWrapper").hide();
+
+        var url="/json/?source=" + $("select#id_sources").val();
+        $.getJSON(url, function(data) {
+            var type = data.type
+            if (type=="ivtv" || type=="dvb") {
+                document.getElementById('id_channels').length = 0;
+                $.each(data.channels, function(i, channel) {
+                    $('select#id_channels').append($("<option></option>").attr("value",channel.id).text(channel.name));
+                });
+                $("#channelsWrapper").show();
+                $("#destinationsWrapper").show();
+            }
+            else if (type=="file") {
+                document.getElementById('id_files').length = 0;
+                $.each(data.files, function(id, file) {
+                   $('select#id_files').append($("<option></option>").attr("value",file).text(file));
+                });
+                $("#filesWrapper").show();
+                $("#sourcesWrapper").show();
+            }
+            else {
+                $("#destinationsWrapper").show();
+            }
+        });
+    }
+    $(document).ready(function () {
+        $("#channelsWrapper").hide();
+        $("#filesWrapper").hide();
+        $("#destinationsWrapper").hide();
+
+        refreshBoxes();
+
+        $("select#id_sources").change(function() {
+            refreshBoxes();
+        });
+    });
+</script>
+</head>
+<body>
+    <div id="content" style="width: 500px;">
+        <div id="main">
+            <h1>Start Stream</h1>
+            {% if error_msg %}<p style="color: red;"><strong>Failed: {{ error_msg }}</strong></p>{% endif %}
+            <form action="." method="post">
+                {% csrf_token %}
+                {{ form.non_field_errors }}
+                <table id="startTable">
+                <tr>
+                    <th>
+                        <label for="id_sources">Sources:</label>
+                    </th>
+                    <td>
+                        {{ form.sources }}
+                    </td>
+                </tr>
+                <tr id="channelsWrapper">
+                    <th>
+                        <label for="id_channels">Channels:</label>
+                    </th>
+                    <td>
+                        {{ form.channels }}
+                    </td>
+                </tr>
+                <tr id="filesWrapper">
+                    <th>
+                        <label for="id_files">Files:</label>
+                    </th>
+                    <td>
+                        {{ form.files }}
+                    </td>
+                </tr>
+                <tr id="destinationsWrapper">
+                    <th>
+                        <label>Destinations:</label>
+                    </th>
+                    <td>
+                        {{ form.destinations }}
+                    </td>
+                </tr>
+                </table>
+                <br/>
+                <input type="submit" value="Start Stream" />
+            </form>
+        </div>
+    </div>
+</body>
+</html>
