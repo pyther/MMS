@@ -57,31 +57,28 @@ def vlcOpts(destinations):
 def startStream(device, destinations):
     opts=[]
 
-    if os.path.isfile(device):
-        opts+=['--loop']
-
-    # Append Recording Device
-    opts+=[device]
 
     return startVLC(opts, destinations) # startVLC returns PID
 
 
 # for dvb devices
-def startStream(device, frequency, program, modulation, destinations):
+def startStream(device, destinations, frequency=None, program=None, modulation=None):
+    vlcCmd=[vlcBin]
+
     opts=[]
     opts+=vlcOpts(destinations)
 
-    # DVB Settings ( adapter, channel, frequency, modulation, program)
-    opts+=['--dvb-adapter',device,'--dvb-frequency', frequency, '--dvb-modulation', modulation, '--program', program]
-    opts+=['dvb://'] # DVB device
+    # DVB Device
+    if frequency and program and modulation:
+        # DVB Settings ( adapter, channel, frequency, modulation, program)
+        opts+=['--dvb-adapter',device,'--dvb-frequency', frequency, '--dvb-modulation', modulation, '--program', program]
+        device='dvb://' # DVB device
+    else:
+        if os.path.isfile(device):
+            opts+=['--loop']
 
-    return startVLC(opts, destinations) # startVLC returns PID
-
-# Start VLC
-# Called from startStream, appropiate options are passed in
-def startVLC(opts, destinations):
-    vlcCmd=[vlcBin]
-    vlcCmd+=opts
+    # Generate VLC Command
+    vlcCmd=[vlcBin] + opts + [device]
 
     # Execute Command and Fork in background
     if debug:
@@ -100,7 +97,6 @@ def startVLC(opts, destinations):
         file.close()
 
     return str(pid);
-
 
 # We only have support for PVR devices
 def v4l2(cinput, device):

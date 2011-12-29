@@ -124,7 +124,7 @@ def start(request):
                 vlc.v4l2(sInput, sDevice)
                 pid=vlc.startStream(sDevice, destinations)
             elif sType == "dvb":
-                pid=vlc.startStream(sDevice, c.frequency, c.program, c.modulation, destinations)
+                pid=vlc.startStream(sDevice, destinations, c.frequency, c.program, c.modulation)
 
             # Build and store info to store into DB
             destination_ids=''
