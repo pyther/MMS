@@ -17,7 +17,7 @@ class ChoiceFieldNoValidation(forms.ChoiceField):
         pass
 
 class SimpleStreamForm(forms.Form):
-    sources = forms.ModelChoiceField(queryset=Source.objects.all())
+    sources = forms.ModelChoiceField(queryset=Source.objects.all().order_by('name'))
     channels = ChoiceFieldNoValidation(required=False)
     files = ChoiceFieldNoValidation(required=False)
     destinations = forms.ModelMultipleChoiceField(queryset=Destination.objects.all(),widget=forms.widgets.CheckboxSelectMultiple,initial=Destination.objects.filter(default=True))
@@ -72,7 +72,7 @@ def start(request):
             # Source Info
             source_obj = form.cleaned_data['sources']
             sId = source_obj.id
-            sType = source_obj.type.name
+            sType = source_obj.type
             sDevice = source_obj.device
             sInput = source_obj.input
             sChannelList = source_obj.channelList
@@ -89,7 +89,7 @@ def start(request):
             for obj in destination_objs:
                 info={}
                 info['id'] = obj.id
-                info['protocol'] = obj.protocol.name
+                info['protocol'] = obj.protocol
                 info['address'] = obj.address
                 destinations.append(info)
 

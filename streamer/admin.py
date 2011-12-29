@@ -1,4 +1,4 @@
-from streamer.models import ChannelList, Channel, Source, Destination, ActiveStream, Setting, Protocol, SourceType
+from streamer.models import ChannelList, Channel, Source, Destination, ActiveStream, Setting
 from django.contrib import admin
 
 class ChannelAdmin(admin.ModelAdmin):
@@ -23,5 +23,3 @@ admin.site.register(Source, SourceAdmin)
 admin.site.register(Destination, DestinationAdmin)
 admin.site.register(ActiveStream, ActiveStreamAdmin)
 admin.site.register(Setting, SettingAdmin)
-admin.site.register(Protocol)
-admin.site.register(SourceType)

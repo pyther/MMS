@@ -1,15 +1,10 @@
 from django.db import models
 
 # Create your models here.
+make_choice = lambda c: [(i, i) for i in c]
 
 class SourceType(models.Model):
     name = models.CharField(max_length=20)
-
-    def __unicode__(self):
-        return self.name
-
-class Protocol(models.Model):
-    name = models.CharField(max_length=10)
 
     def __unicode__(self):
         return self.name
@@ -33,7 +28,7 @@ class Channel(models.Model):
 
 class Source(models.Model):
     name = models.CharField(max_length=200)
-    type = models.ForeignKey('SourceType')
+    type = models.CharField(max_length=16, choices = make_choice(["ivtv", "dvb", "file", "v4l2"]))
     device = models.CharField(max_length=200)
     input = models.CharField(max_length=20, blank=True)
     channelList = models.ForeignKey('channelList', null=True, blank=True)
@@ -43,7 +38,8 @@ class Source(models.Model):
 
 class Destination(models.Model):
     name = models.CharField(max_length=200)
-    protocol = models.ForeignKey('Protocol')
+    protocol = models.CharField(max_length=16, choices = make_choice(["rtp"]))
+    #protocol = models.ForeignKey('Protocol')
     address = models.CharField(max_length=200)
     default = models.BooleanField()
 
