@@ -47,8 +47,8 @@
                                 <td></td>
                             {% endif %}
                             <td>
-                            {% for dest in stream.destinationNames %}
-                            {{ dest }}</br>
+                            {% for dst in stream.dstNames %}
+                            {{ dst }}</br>
                             {% endfor %}
                             </td>
                             <td>{{stream.time}}</td>

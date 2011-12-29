@@ -23,12 +23,12 @@ class SimpleStreamForm(forms.Form):
     destinations = forms.ModelMultipleChoiceField(queryset=Destination.objects.all(),widget=forms.widgets.CheckboxSelectMultiple,initial=Destination.objects.filter(default=True))
 
 class StreamInfo:
-    def __init__(self, sourceName, channelID, destinationNames, time, pk, channels):
+    def __init__(self, sourceName, channelID, dstNames, time, id, channels):
         self.sourceName = sourceName
         self.channelID = channelID
-        self.destinationNames = destinationNames
+        self.dstNames = dstNames
         self.time = time
-        self.pk = pk
+        self.id = id
         self.channels = channels
         # Running (Is the PID Alive)
 
@@ -39,7 +39,7 @@ def index(request):
     # Go through each Stream and get some information about it
     streams=[]
     for stream in ActiveStream.objects.all():
-        source_obj=Source.objects.get(pk=stream.sourceId)
+        source_obj=Source.objects.get(id=stream.sourceId)
         sourceID=source_obj.id
         sourceName=source_obj.name
 
@@ -53,17 +53,15 @@ def index(request):
         except:
             channelID=''
 
-        # Set Channel if input source is the tv
-        #if sourceType == "dvb" or sourceType == "ivtv":
-
-        # Get the Names of the Outputs
-        outputPKS=stream.outputs.split(',')
-        destinationNames=[ Destination.objects.get(pk=pk).name for pk in outputPKS ]
+        # Multiple Destination IDs are stored in the DstIds streams (as a string)
+        # Split, so we can look up individual destinations 
+        dstIds=stream.dstIds.split(',')
+        dstNames=[ Destination.objects.get(id=id).name for id in dstIds ]
 
         starttime=stream.time
-        pk=stream.pk
+        id=stream.id
 
-        streams.append(StreamInfo(sourceName, channelID, destinationNames, starttime, pk, channels))
+        streams.append(StreamInfo(sourceName, channelID, dstNames, starttime, id, channels))
     return render_to_response('streamer/index.html', {'streams':streams})
 
 # Allows user to start the stream
@@ -73,11 +71,11 @@ def start(request):
         if form.is_valid():
             # Source Info
             source_obj = form.cleaned_data['sources']
-            source_pk = source_obj.pk
+            sId = source_obj.id
             sType = source_obj.type.name
             sDevice = source_obj.device
             sInput = source_obj.input
-            source_channelList = source_obj.channelList
+            sChannelList = source_obj.channelList
 
             # File Info
             file = form.cleaned_data['files']
@@ -90,7 +88,7 @@ def start(request):
             destinations=[]
             for obj in destination_objs:
                 info={}
-                info['pk'] = obj.pk
+                info['id'] = obj.id
                 info['protocol'] = obj.protocol.name
                 info['address'] = obj.address
                 destinations.append(info)
@@ -98,7 +96,7 @@ def start(request):
             # Sanity Checks - Make sure there isn't another stream going that uses the same resources
             if sType != "file":
                 try:
-                    ActiveStream.objects.get(sourceId=source_pk)
+                    ActiveStream.objects.get(sourceId=sId)
                 except ActiveStream.DoesNotExist:
                     pass
                 else:
@@ -108,7 +106,7 @@ def start(request):
 
             for dst in destinations:
                 for obj in ActiveStream.objects.all():
-                    if obj.hasOutput(str(dst['pk'])):
+                    if obj.hasOutput(str(dst['id'])):
                         msg="Stream is in USE!"
                         return render_to_response('streamer/start.html', {'form':form,'error_msg':msg}, context_instance=RequestContext(request))
 
@@ -131,12 +129,12 @@ def start(request):
             # Build and store info to store into DB
             destination_ids=''
             for (counter, dest) in enumerate(destinations):
-                destination_ids+=str(dest['pk'])
+                destination_ids+=str(dest['id'])
                 if len(destinations) != (counter+1):
                     destination_ids+=','
 
             # Temporary PID
-            s = ActiveStream(pid=pid, sourceId=source_pk, channel=c.number, dstIds=destination_ids, time=datetime.datetime.now())
+            s = ActiveStream(pid=pid, sourceId=sId, channelId=c.number, dstIds=destination_ids, time=datetime.datetime.now())
             s.save()
             #return HttpResponse(str(pid))
             return HttpResponseRedirect(reverse('streamer.views.index'))
@@ -148,7 +146,7 @@ def start(request):
 def json(request):
     if request.method == "GET" and request.GET.has_key('source') and request.GET.get(u'source'):
         id_source = request.GET.get(u'source')
-        source_obj = get_object_or_404(Source, pk=id_source)
+        source_obj = get_object_or_404(Source, id=id_source)
         source_type = str(source_obj.type).lower()
 
         # If we have a file source type - get list of files
