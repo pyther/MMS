@@ -10,7 +10,7 @@ urlpatterns = patterns('streamer.views',
     url(r'^$', 'index', name='index'),
     url(r'^start/$', 'start', name='start'),
     url(r'^json/$', 'json', name='json'),
-    url(r'^kill/(?P<stream_id>\d+)/$', 'kill', name='kill'),
+    url(r'^stream/(?P<stream_id>\d+)/stop/$', 'kill', name='kill'),
     url(r'^stream/(?P<stream_id>\d+)/change/(?P<channelId>\d+)/$', 'change', name='change'),
     # url(r'^mms/', include('mms.foo.urls')),
 

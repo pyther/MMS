@@ -169,10 +169,7 @@ def json(request):
 
     # Sort Files
     files=sorted(files)
-    #return HttpResponse(source_input)
-    # "channels": [{ "number": 1, "name": "3 - WKYC"}, {}, {}]
-    # $.each(channels, function(i, channel){});
-    # $('<option>').attr('value', channel.number).html(channel.text).appendTo('.YourSelectBoxHere'); 
+
     json = simplejson.dumps({'type':source_type,'files':files,'channels':channels})
     return HttpResponse(json, mimetype='application/json')
 
@@ -185,11 +182,10 @@ def change(request, stream_id, channelId):
     c=get_object_or_404(Channel,id=channelId)
 
     if sType == 'ivtv':
-        print channel
-        #vlc.tuneChannel(c.number, sDevice)
+        vlc.tuneChannel(c.number, sDevice)
         streamObj.channelId=channelId
         streamObj.save()
-    # Must stop stream and restart, yuck
+    # Restart VLC, yuck
     elif sType == 'dvb':
         # Get Active Stream destinations
         dstIds=str(streamObj.dstIds).split(',')
@@ -197,7 +193,7 @@ def change(request, stream_id, channelId):
         dstObjs=[ Destination.objects.get(id=dstId) for dstId in dstIds ]
 
         # Kill Stream
-        #os.kill(streamObj.pid, 15)
+        os.kill(streamObj.pid, 15)
 
         # Start Stream
         pid=vlc.startStream(sDevice, dstObjs, c.frequency, c.program, c.modulation)
