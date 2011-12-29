@@ -85,13 +85,7 @@ def start(request):
 
             # Stream Info
             destination_objs = form.cleaned_data['destinations']
-            destinations=[]
-            for obj in destination_objs:
-                info={}
-                info['id'] = obj.id
-                info['protocol'] = obj.protocol
-                info['address'] = obj.address
-                destinations.append(info)
+            destinations=[ {'id':obj.id,'protocol':obj.protocol,'address':obj.address} for obj in destination_objs ]
 
             # Sanity Checks - Make sure there isn't another stream going that uses the same resources
             if sType != "file":
@@ -187,17 +181,41 @@ def json(request):
     json = simplejson.dumps({'type':source_type,'files':files,'channels':channels})
     return HttpResponse(json, mimetype='application/json')
 
-def change(request, stream_id, channel):
+def change(request, stream_id, channelId):
     '''Change the TV Channel'''
-    stream_obj=get_object_or_404(ActiveStream,id=stream_id)
-    input_obj=get_object_or_404(Source,id=stream_obj.sourceId)
-    input_type=input_obj.type.name
-    input_path=input_obj.path
+    streamObj=get_object_or_404(ActiveStream,id=stream_id)
+    sourceObj=get_object_or_404(Source,id=streamObj.sourceId)
+    sType=sourceObj.type
+    sDevice=sourceObj.device
+    c=get_object_or_404(Channel,id=channelId)
 
-    if input_type=='ivtv':
-        vlc.tuneChannel(channel, input_path)
-        stream_obj.channel=channel
-        stream_obj.save()
+    if sType == 'ivtv':
+        print channel
+        #vlc.tuneChannel(c.number, sDevice)
+        streamObj.channelId=channelId
+        streamObj.save()
+    # Must stop stream and restart, yuck
+    elif sType == 'dvb':
+        # Get Active Stream destinations
+        dstIds=streamObj.dstIds
+        # Get  all active stream dst objects
+        dstObjs=[ Destination.objects.get(id=dstId) for dstId in dstIds ]
+        destinations=[ {'id':obj.id,'protocol':obj.protocol,'address':obj.address} for obj in dstObjs ]
+
+        #for dstId in dstIds:
+        #    dstObj=Destination.objects.get(id=dstId)
+        #    destinations.append({'id':dstObj.id,'protocol':dstObj.protocol,'address':dstObj.address})
+
+        # Kill Stream
+        #os.kill(streamObj.pid, 15)
+
+        # Start Stream
+        pid=vlc.startStream(sDevice, destinations, c.frequency, c.program, c.modulation)
+
+        # Update Channel ID & PID
+        streamObj.channelId=channelId
+        streamObj.pid=pid
+        streamObj.save()
     else:
         return HttpResponseBadRequest('Can\'t change channel for source: ' + input_type)
     return HttpResponse('Channel Changed')

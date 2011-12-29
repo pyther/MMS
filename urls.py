@@ -11,7 +11,7 @@ urlpatterns = patterns('streamer.views',
     url(r'^start/$', 'start', name='start'),
     url(r'^json/$', 'json', name='json'),
     url(r'^kill/(?P<stream_id>\d+)/$', 'kill', name='kill'),
-    url(r'^stream/(?P<stream_id>\d+)/change/(?P<channel>\d+)/$', 'change', name='change'),
+    url(r'^stream/(?P<stream_id>\d+)/change/(?P<channelId>\d+)/$', 'change', name='change'),
     # url(r'^mms/', include('mms.foo.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:

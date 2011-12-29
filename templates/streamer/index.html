@@ -32,7 +32,7 @@
                             <td>{{stream.sourceName}}</td>
                             {% if stream.channels %}
                                 <td>
-                                <select id="channels" onchange="changeChannel({{ stream.pk }});">
+                                <select id="channels" onchange="changeChannel({{ stream.id }});">
                                 {% for c in stream.channels %}
                                     {% ifequal c.id stream.channelID %}
                                         <option selected="selected" value="{{ c.id }}">
