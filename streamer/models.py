@@ -14,7 +14,7 @@ class Protocol(models.Model):
     def __unicode__(self):
         return self.name
 
-class channelList(models.Model):
+class ChannelList(models.Model):
     name = models.CharField(max_length=200)
 
     def __unicode__(self):
@@ -51,15 +51,15 @@ class Destination(models.Model):
         return self.name
 
 # Current Running Streams
-class Stream(models.Model):
+class ActiveStream(models.Model):
     pid = models.IntegerField()
-    input_id = models.IntegerField()
-    channel = models.CharField(max_length=5,blank=True)
-    outputs = models.CharField(max_length=200)
+    sourceId = models.IntegerField()
+    channelId = models.CharField(max_length=5,blank=True)
+    dstIds = models.CharField(max_length=200)
     time = models.DateTimeField()
 
     def hasOutput(self, x):
-        ids=self.outputs.split(',')
+        ids=self.dstIds.split(',')
         for id in ids:
             if x == id:
                 return True

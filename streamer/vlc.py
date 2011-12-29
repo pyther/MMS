@@ -6,15 +6,20 @@ from time import sleep
 import string, random
 import os
 
-def generateDst(stream):
+# Write commands to file instead of executing them
+debug=True
+
+vlcBin='/usr/bin/cvlc'
+
+def generateDst(dest):
     port=''
     dst=''
-    if stream['proto']=='rtp':
+    if dest['protocol']=='rtp':
         try:
-            stream,port=stream['addr'].split(':')
+            stream,port=dest['address'].split(':')
         except ValueError:
                # Likely just the stream
-               stream=stream['addr']
+               stream=dest['address']
 
         dst='rtp{dst='+stream+','
         if port:
@@ -22,72 +27,98 @@ def generateDst(stream):
         dst+='mux=ts}'
     return dst
 
+def vlcOpts(destinations):
+    # Sout Code
+    sout='#duplicate{'
+    for (counter, dest) in enumerate(destinations):
+        sout+="dst="+generateDst(dest)
+        if (counter+1) != len(dest):
+            sout+=','
+    sout+='}'
 
-
-def startStream(device, streams):
-    if len(streams) == 0:
-        sout='#'+genaretDst(streams[0])
-    else:
-        sout='#duplicate{'
-        for (counter, stream) in enumerate(streams):
-            sout+="dst="+generateDst(stream)
-            if (counter+1) != len(streams):
-                sout+=','
-        sout+='}'
-
-    vlcCmd=['/usr/bin/cvlc']
+    opts=[]
 
     # File Logging
-    vlcCmd+=['--file-logging', '--logfile=/home/g09/vlc.log']
+    opts+=['--file-logging', '--logfile=/home/g09/vlc.log']
 
     # Daemon
-    vlcCmd+=['--daemon']
+    opts+=['--daemon']
 
     # Pid File
     pidfile='/tmp/vlc-'+''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))+'.pid'
-    vlcCmd+=['--pidfile', pidfile]
-
-    if os.path.isfile(device):
-        vlcCmd+=['--loop']
+    opts+=['--pidfile', pidfile]
 
     #Sout
-    vlcCmd+=['--sout', sout]
+    opts+=['--sout', sout]
 
-    # Device
-    vlcCmd+=[device]
+    return opts
 
-    p = subprocess.Popen(vlcCmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, close_fds=True)
+# v4l2, ivtv, and other devices that don't require addition vlc opts
+def startStream(device, destinations):
+    opts=[]
+
+    if os.path.isfile(device):
+        opts+=['--loop']
+
+    # Append Recording Device
+    opts+=[device]
+
+    return startVLC(opts, destinations) # startVLC returns PID
+
+
+# for dvb devices
+def startStream(device, frequency, program, modulation, destinations):
+    opts=[]
+    opts+=vlcOpts(destinations)
+
+    # DVB Settings ( adapter, channel, frequency, modulation, program)
+    opts+=['--dvb-adapter',device,'--dvb-frequency', frequency, '--dvb-modulation', modulation, '--program', program]
+    opts+=['dvb://'] # DVB device
+
+    return startVLC(opts, destinations) # startVLC returns PID
+
+# Start VLC
+# Called from startStream, appropiate options are passed in
+def startVLC(opts, destinations):
+    vlcCmd=[vlcBin]
+    vlcCmd+=opts
+
+    # Execute Command and Fork in background
+    if debug:
+        print(' '.join(vlcCmd))
+    else:
+        p = subprocess.Popen(vlcCmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, close_fds=True)
 
     # Sleep 0.5 seconds so pid file can be created
     sleep(0.5)
 
-    file=open(pidfile, 'r')
-    pid=file.readline().strip('\n')
-    file.close()
+    if debug:
+        pid=9999
+    else:
+        file=open(pidfile, 'r')
+        pid=file.readline().strip('\n')
+        file.close()
 
     return str(pid);
 
+
 # We only have support for PVR devices
-def tune(input_type, input_source, channel, path):
-    device=path.split(':/')
-
-    if device[0]=="pvr":
-        # Change Input Source
-        p = subprocess.Popen(['/usr/local/bin/v4l2-ctl', '-i', input_source, '-d', device[1]])
-
-        if input_type == "tv":
-            tuneChannel(channel, path)
+def v4l2(cinput, device):
+    cmd=['/usr/local/bin/v4l2-ctl', '-i', cinput, '-d', device]
+    if debug:
+        print(' '.join(cmd))
     else:
-        return 1
+        p = subprocess.Popen(cmd)
+
     return 0
 
-def tuneChannel(channel, path):
-    device=path.split(':/')
-    if device[0]=="pvr":
-        p = subprocess.Popen(['/usr/local/bin/ivtv-tune', '-t', 'us-cable', '-d', device[1], '-c', channel])
+def ivtvTune(device, channel, modulation):
+    cmd=['/usr/local/bin/ivtv-tune', '-t', modulation, '-d', device, '-c', channel]
+    if debug:
+        print(' '.join(cmd))
+    else:
+        p = subprocess.Popen(cmd)
         p.wait()
         if not p.returncode == 0:
             return 1
-    else:
-        return 1
     return 0

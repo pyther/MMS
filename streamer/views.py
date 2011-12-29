@@ -4,7 +4,7 @@ from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadReque
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.core.urlresolvers import reverse
-from streamer.models import Channel, Source, Destination, Stream
+from streamer.models import Channel, Source, Destination, ActiveStream
 from django.utils import simplejson
 from django import forms
 import vlc
@@ -38,13 +38,14 @@ def index(request):
 
     # Go through each Stream and get some information about it
     streams=[]
-    for stream in Stream.objects.all():
-        source_obj=Source.objects.get(pk=stream.input_id)
+    for stream in ActiveStream.objects.all():
+        source_obj=Source.objects.get(pk=stream.sourceId)
         sourceID=source_obj.id
         sourceName=source_obj.name
 
         # Get the source Channels
-        channels=Channel.objects.filter(channelList=source_obj.channelList).order_by('number')
+        cobj=Channel.objects.filter(channelList=source_obj.channelList)
+        channels=cobj.extra(select={"decimal": "CAST(number as DECIMAL)"}).order_by("decimal")
 
         # Store channelID if set
         try:
@@ -73,14 +74,16 @@ def start(request):
             # Source Info
             source_obj = form.cleaned_data['sources']
             source_pk = source_obj.pk
-            source_type = source_obj.type.name
-            source_dev = source_obj.device
-            source_input = source_obj.input
+            sType = source_obj.type.name
+            sDevice = source_obj.device
+            sInput = source_obj.input
             source_channelList = source_obj.channelList
 
             # File Info
             file = form.cleaned_data['files']
-            channel = form.cleaned_data['channels']
+            channelID = form.cleaned_data['channels']
+
+            c=Channel.objects.get(id=channelID)
 
             # Stream Info
             destination_objs = form.cleaned_data['destinations']
@@ -93,31 +96,37 @@ def start(request):
                 destinations.append(info)
 
             # Sanity Checks - Make sure there isn't another stream going that uses the same resources
-            if source_type != "file":
+            if sType != "file":
                 try:
-                    Stream.objects.get(input_id=source_pk)
-                except Stream.DoesNotExist:
+                    ActiveStream.objects.get(sourceId=source_pk)
+                except ActiveStream.DoesNotExist:
                     pass
                 else:
                     msg="This Source is currently being USED!"
                     return render_to_response('streamer/start.html', {'form':form,'error_msg':msg}, context_instance=RequestContext(request))
 
 
-            for dest in destinations:
-                for obj in Stream.objects.all():
-                    if obj.hasOutput(str(dest['pk'])):
+            for dst in destinations:
+                for obj in ActiveStream.objects.all():
+                    if obj.hasOutput(str(dst['pk'])):
                         msg="Stream is in USE!"
                         return render_to_response('streamer/start.html', {'form':form,'error_msg':msg}, context_instance=RequestContext(request))
 
             # Tune Capture Card and Start Stream
-            if source_type == "file":
-                mediafile=os.path.join(source_dev, file)
-                pid=9999
-                #pid=vlc.startStream(mediafile, outputs)
-            else:
-                #vlc.tune(input_type, input_source, str(channel), input_path)
-                pid=9998
-                #pid=vlc.startStream(input_path, outputs)
+            # Handle Different Source Types
+            if sType == "file":
+                mediafile=os.path.join(sDevice, file)
+                #pid=9999
+                pid=vlc.startStream(mediafile, destinations)
+            elif sType == "ivtv":
+                vlc.v4l2(sInput, sDevice)
+                vlc.ivtvTune(sDevice, c.number, c.modulation)
+                pid=vlc.startStream(sDevice, destinations)
+            elif sType == "v4l2":
+                vlc.v4l2(sInput, sDevice)
+                pid=vlc.startStream(sDevice, destinations)
+            elif sType == "dvb":
+                pid=vlc.startStream(sDevice, c.frequency, c.program, c.modulation, destinations)
 
             # Build and store info to store into DB
             destination_ids=''
@@ -127,7 +136,7 @@ def start(request):
                     destination_ids+=','
 
             # Temporary PID
-            s = Stream(pid=pid, input_id=source_pk, channel=channel, outputs=destination_ids, time=datetime.datetime.now())
+            s = ActiveStream(pid=pid, sourceId=source_pk, channel=c.number, dstIds=destination_ids, time=datetime.datetime.now())
             s.save()
             #return HttpResponse(str(pid))
             return HttpResponseRedirect(reverse('streamer.views.index'))
@@ -161,7 +170,11 @@ def json(request):
         elif source_obj.channelList:
             # Select channels in Channel List
             # Order channels by number
-            for c in Channel.objects.filter(channelList=source_obj.channelList).order_by('number'):
+            cobj=Channel.objects.filter(channelList=source_obj.channelList)
+            # Sort by Decimal Order
+            cobj=cobj.extra(select={"decimal": "CAST(number as DECIMAL)"}).order_by("decimal")
+            #for c in .order_by('number'):
+            for c in cobj:
                 channels.append({'id':c.id,'name':str(c)})
 
     else:
@@ -178,12 +191,12 @@ def json(request):
 
 def change(request, stream_id, channel):
     '''Change the TV Channel'''
-    stream_obj=get_object_or_404(Stream,pk=stream_id)
-    input_obj=get_object_or_404(Input,pk=stream_obj.input_id)
+    stream_obj=get_object_or_404(ActiveStream,id=stream_id)
+    input_obj=get_object_or_404(Source,id=stream_obj.sourceId)
     input_type=input_obj.type.name
     input_path=input_obj.path
 
-    if input_type=='tv':
+    if input_type=='ivtv':
         vlc.tuneChannel(channel, input_path)
         stream_obj.channel=channel
         stream_obj.save()
@@ -193,7 +206,7 @@ def change(request, stream_id, channel):
 
 def kill(request, stream_id):
     '''Removes a stream'''
-    s=get_object_or_404(Stream,pk=stream_id)
+    s=get_object_or_404(ActiveStream,id=stream_id)
 
     # GET PID
     os.kill(s.pid, 15)

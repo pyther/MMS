@@ -1,27 +1,27 @@
-from streamer.models import channelList, Channel, Source, Destination, Stream, Setting, Protocol, SourceType
+from streamer.models import ChannelList, Channel, Source, Destination, ActiveStream, Setting, Protocol, SourceType
 from django.contrib import admin
 
-class channelAdmin(admin.ModelAdmin):
+class ChannelAdmin(admin.ModelAdmin):
     list_display = ('number', 'name', 'frequency', 'program', 'modulation', 'channelList')
     ordering = ['number']
 
-class sourceAdmin(admin.ModelAdmin):
+class SourceAdmin(admin.ModelAdmin):
     list_display = ('name', 'type', 'device', 'input', 'channelList')
 
-class destinationAdmin(admin.ModelAdmin):
+class DestinationAdmin(admin.ModelAdmin):
     list_display = ('name', 'protocol', 'address', 'default')
 
-class streamAdmin(admin.ModelAdmin):
+class ActiveStreamAdmin(admin.ModelAdmin):
     list_display = ('pid', 'input_id', 'channel', 'outputs', 'time')
 
-class settingAdmin(admin.ModelAdmin):
+class SettingAdmin(admin.ModelAdmin):
     list_display = ('name', 'value')
 
-admin.site.register(channelList)
-admin.site.register(Channel, channelAdmin)
-admin.site.register(Source, sourceAdmin)
-admin.site.register(Destination, destinationAdmin)
-admin.site.register(Stream, streamAdmin)
-admin.site.register(Setting, settingAdmin)
+admin.site.register(ChannelList)
+admin.site.register(Channel, ChannelAdmin)
+admin.site.register(Source, SourceAdmin)
+admin.site.register(Destination, DestinationAdmin)
+admin.site.register(Stream, StreamAdmin)
+admin.site.register(Setting, SettingAdmin)
 admin.site.register(Protocol)
 admin.site.register(SourceType)
