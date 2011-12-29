@@ -3,12 +3,6 @@ from django.db import models
 # Create your models here.
 make_choice = lambda c: [(i, i) for i in c]
 
-class SourceType(models.Model):
-    name = models.CharField(max_length=20)
-
-    def __unicode__(self):
-        return self.name
-
 class ChannelList(models.Model):
     name = models.CharField(max_length=200)
 
