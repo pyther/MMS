@@ -11,30 +11,25 @@ debug=True
 
 vlcBin='/usr/bin/cvlc'
 
-def generateDst(dest):
+def generateDst(dst):
     port=''
-    dst=''
-    if dest['protocol']=='rtp':
+    txt=''
+    if dst.protocol == 'rtp':
         try:
-            stream,port=dest['address'].split(':')
+            stream,port=str(dst.address).split(':')
         except ValueError:
                # Likely just the stream
-               stream=dest['address']
+               stream=dst.address
 
-        dst='rtp{dst='+stream+','
+        txt='rtp{dst='+stream+','
         if port:
-            dst+="port="+port+','
-        dst+='mux=ts}'
-    return dst
+            txt+="port="+port+','
+        txt+='mux=ts}'
+    return txt
 
-def vlcOpts(destinations):
+def vlcOpts(dstObjs):
     # Sout Code
-    sout='#duplicate{'
-    for (counter, dest) in enumerate(destinations):
-        sout+="dst="+generateDst(dest)
-        if (counter+1) != len(dest):
-            sout+=','
-    sout+='}'
+    sout='#duplicate{'+','.join(["dst="+generateDst(dst) for dst in dstObjs])+'}'
 
     opts=[]
 
@@ -53,20 +48,13 @@ def vlcOpts(destinations):
 
     return opts
 
-# v4l2, ivtv, and other devices that don't require addition vlc opts
-def startStream(device, destinations):
-    opts=[]
-
-
-    return startVLC(opts, destinations) # startVLC returns PID
-
 
 # for dvb devices
-def startStream(device, destinations, frequency=None, program=None, modulation=None):
+def startStream(device, dstObjs, frequency=None, program=None, modulation=None):
     vlcCmd=[vlcBin]
 
     opts=[]
-    opts+=vlcOpts(destinations)
+    opts+=vlcOpts(dstObjs)
 
     # DVB Device
     if frequency and program and modulation:

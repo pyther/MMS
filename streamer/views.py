@@ -84,8 +84,7 @@ def start(request):
             c=Channel.objects.get(id=channelID)
 
             # Stream Info
-            destination_objs = form.cleaned_data['destinations']
-            destinations=[ {'id':obj.id,'protocol':obj.protocol,'address':obj.address} for obj in destination_objs ]
+            dstObjs = form.cleaned_data['destinations']
 
             # Sanity Checks - Make sure there isn't another stream going that uses the same resources
             if sType != "file":
@@ -98,9 +97,9 @@ def start(request):
                     return render_to_response('streamer/start.html', {'form':form,'error_msg':msg}, context_instance=RequestContext(request))
 
 
-            for dst in destinations:
+            for dst in dstObjs:
                 for obj in ActiveStream.objects.all():
-                    if obj.hasOutput(str(dst['id'])):
+                    if obj.hasOutput(str(dst.id)):
                         msg="Stream is in USE!"
                         return render_to_response('streamer/start.html', {'form':form,'error_msg':msg}, context_instance=RequestContext(request))
 
@@ -109,26 +108,22 @@ def start(request):
             if sType == "file":
                 mediafile=os.path.join(sDevice, file)
                 #pid=9999
-                pid=vlc.startStream(mediafile, destinations)
+                pid=vlc.startStream(mediafile, dstObjs)
             elif sType == "ivtv":
                 vlc.v4l2(sInput, sDevice)
                 vlc.ivtvTune(sDevice, c.number, c.modulation)
-                pid=vlc.startStream(sDevice, destinations)
+                pid=vlc.startStream(sDevice, dstObjs)
             elif sType == "v4l2":
                 vlc.v4l2(sInput, sDevice)
-                pid=vlc.startStream(sDevice, destinations)
+                pid=vlc.startStream(sDevice, dstObjs)
             elif sType == "dvb":
-                pid=vlc.startStream(sDevice, destinations, c.frequency, c.program, c.modulation)
+                pid=vlc.startStream(sDevice, dstObjs, c.frequency, c.program, c.modulation)
 
-            # Build and store info to store into DB
-            destination_ids=''
-            for (counter, dest) in enumerate(destinations):
-                destination_ids+=str(dest['id'])
-                if len(destinations) != (counter+1):
-                    destination_ids+=','
+            # Get destination IDs to store into DB
+            dstIds=','.join([ str(dst.id) for dst in dstObjs ])
 
             # Temporary PID
-            s = ActiveStream(pid=pid, sourceId=sId, channelId=c.number, dstIds=destination_ids, time=datetime.datetime.now())
+            s = ActiveStream(pid=pid, sourceId=sId, channelId=c.number, dstIds=dstIds, time=datetime.datetime.now())
             s.save()
             #return HttpResponse(str(pid))
             return HttpResponseRedirect(reverse('streamer.views.index'))
@@ -197,20 +192,15 @@ def change(request, stream_id, channelId):
     # Must stop stream and restart, yuck
     elif sType == 'dvb':
         # Get Active Stream destinations
-        dstIds=streamObj.dstIds
+        dstIds=str(streamObj.dstIds).split(',')
         # Get  all active stream dst objects
         dstObjs=[ Destination.objects.get(id=dstId) for dstId in dstIds ]
-        destinations=[ {'id':obj.id,'protocol':obj.protocol,'address':obj.address} for obj in dstObjs ]
-
-        #for dstId in dstIds:
-        #    dstObj=Destination.objects.get(id=dstId)
-        #    destinations.append({'id':dstObj.id,'protocol':dstObj.protocol,'address':dstObj.address})
 
         # Kill Stream
         #os.kill(streamObj.pid, 15)
 
         # Start Stream
-        pid=vlc.startStream(sDevice, destinations, c.frequency, c.program, c.modulation)
+        pid=vlc.startStream(sDevice, dstObjs, c.frequency, c.program, c.modulation)
 
         # Update Channel ID & PID
         streamObj.channelId=channelId
