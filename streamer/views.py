@@ -20,7 +20,12 @@ class SimpleStreamForm(forms.Form):
     sources = forms.ModelChoiceField(queryset=Source.objects.all().order_by('name'))
     channels = ChoiceFieldNoValidation(required=False)
     files = ChoiceFieldNoValidation(required=False)
-    destinations = forms.ModelMultipleChoiceField(queryset=Destination.objects.all(),widget=forms.widgets.CheckboxSelectMultiple,initial=Destination.objects.filter(default=True))
+    destinations = forms.ModelMultipleChoiceField(
+        queryset=Destination.objects.all(),
+        widget=forms.widgets.CheckboxSelectMultiple,
+        initial=Destination.objects.filter(default=True),
+        error_messages={'required': 'At least one destination must be selected'}
+    )
 
 class StreamInfo:
     def __init__(self, sourceName, channelID, dstNames, time, id, channels):
@@ -54,7 +59,7 @@ def index(request):
             channelID=''
 
         # Multiple Destination IDs are stored in the DstIds streams (as a string)
-        # Split, so we can look up individual destinations 
+        # Split, so we can look up individual destinations
         dstIds=stream.dstIds.split(',')
         dstNames=[ Destination.objects.get(id=id).name for id in dstIds ]
 

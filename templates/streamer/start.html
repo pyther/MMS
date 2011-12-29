@@ -51,6 +51,7 @@
     <div id="content" style="width: 500px;">
         <div id="main">
             <h1>Start Stream</h1>
+            {{ form.destinations.errors }}
             {% if error_msg %}<p style="color: red;"><strong>Failed: {{ error_msg }}</strong></p>{% endif %}
             <form action="." method="post">
                 {% csrf_token %}

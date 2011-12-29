@@ -25,7 +25,7 @@ class Source(models.Model):
     type = models.CharField(max_length=16, choices = make_choice(["ivtv", "dvb", "file", "v4l2"]))
     device = models.CharField(max_length=200)
     input = models.CharField(max_length=20, blank=True)
-    channelList = models.ForeignKey('channelList', null=True, blank=True)
+    channelList = models.ForeignKey('ChannelList', null=True, blank=True)
 
     def __unicode__(self):
         return self.name;
@@ -33,7 +33,6 @@ class Source(models.Model):
 class Destination(models.Model):
     name = models.CharField(max_length=200)
     protocol = models.CharField(max_length=16, choices = make_choice(["rtp"]))
-    #protocol = models.ForeignKey('Protocol')
     address = models.CharField(max_length=200)
     default = models.BooleanField()
 
