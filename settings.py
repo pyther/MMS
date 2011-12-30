@@ -76,7 +76,9 @@ ROOT_URLCONF = 'mms.urls'
 TEMPLATE_DIRS = (os.path.join(PROJECT_ROOT, 'templates'))
 
 INSTALLED_APPS = (
+    'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'streamer',
