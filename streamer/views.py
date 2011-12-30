@@ -8,9 +8,12 @@ from django.core.exceptions import ValidationError
 from streamer.models import Channel, Source, Destination, ActiveStream
 from django.utils import simplejson
 from django import forms
+from django.conf import settings
 import vlc
 import datetime
 import os
+
+DEBUG_CMD = settings.DEBUG_CMD
 
 class ChoiceFieldNoValidation(forms.ChoiceField):
     # Remove Validation Checks in ChoiceField
@@ -195,7 +198,7 @@ def change(request, stream_id, channelId):
     c=get_object_or_404(Channel,id=channelId)
 
     if sType == 'ivtv':
-        vlc.tuneChannel(c.number, sDevice)
+        vlc.ivtvTune(sDevice, c.number, c.modulation)
         streamObj.channelId=channelId
         streamObj.save()
     # Restart VLC, yuck
@@ -206,7 +209,10 @@ def change(request, stream_id, channelId):
         dstObjs=[ Destination.objects.get(id=dstId) for dstId in dstIds ]
 
         # Kill Stream
-        os.kill(streamObj.pid, 15)
+        if DEBUG_CMD:
+            print "Kill " + str(streamObj.pid)
+        else:
+            os.kill(streamObj.pid, 15)
 
         # Start Stream
         pid=vlc.startStream(sDevice, dstObjs, c.frequency, c.program, c.modulation)
@@ -224,6 +230,9 @@ def kill(request, stream_id):
     s=get_object_or_404(ActiveStream,id=stream_id)
 
     # GET PID
-    os.kill(s.pid, 15)
+    if DEBUG_CMD:
+        print "Kill " + str(s.pid)
+    else:
+        os.kill(s.pid, 15)
     s.delete()
     return HttpResponseRedirect(reverse('streamer.views.index'))

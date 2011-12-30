@@ -5,9 +5,10 @@ import sys
 from time import sleep
 import string, random
 import os
+from django.conf import settings
 
 # Write commands to file instead of executing them
-debug=True
+DEBUG_CMD = settings.DEBUG_CMD
 
 vlcBin='/usr/bin/cvlc'
 
@@ -69,7 +70,7 @@ def startStream(device, dstObjs, frequency=None, program=None, modulation=None):
     vlcCmd=[vlcBin] + opts + [device]
 
     # Execute Command and Fork in background
-    if debug:
+    if DEBUG_CMD:
         print(' '.join(vlcCmd))
     else:
         p = subprocess.Popen(vlcCmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, close_fds=True)
@@ -77,7 +78,7 @@ def startStream(device, dstObjs, frequency=None, program=None, modulation=None):
     # Sleep 0.5 seconds so pid file can be created
     sleep(0.5)
 
-    if debug:
+    if DEBUG_CMD:
         pid=9999
     else:
         file=open(pidfile, 'r')
@@ -89,7 +90,7 @@ def startStream(device, dstObjs, frequency=None, program=None, modulation=None):
 # We only have support for PVR devices
 def v4l2(cinput, device):
     cmd=['/usr/local/bin/v4l2-ctl', '-i', cinput, '-d', device]
-    if debug:
+    if DEBUG_CMD:
         print(' '.join(cmd))
     else:
         p = subprocess.Popen(cmd)
@@ -98,7 +99,7 @@ def v4l2(cinput, device):
 
 def ivtvTune(device, channel, modulation):
     cmd=['/usr/local/bin/ivtv-tune', '-t', modulation, '-d', device, '-c', channel]
-    if debug:
+    if DEBUG_CMD:
         print(' '.join(cmd))
     else:
         p = subprocess.Popen(cmd)

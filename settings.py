@@ -4,7 +4,7 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 # Print commands to stdout instead of running them
-DEBUG_CMDS=False
+DEBUG_CMD=False
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
