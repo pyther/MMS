@@ -81,7 +81,7 @@ def startStream(device, dstObjs, frequency=None, program=None, modulation=None):
     if DEBUG_CMD:
         pid=9999
     else:
-        file=open(pidfile, 'r')
+        file=open(pidFile, 'r')
         pid=file.readline().strip('\n')
         file.close()
 
