@@ -60,6 +60,22 @@ a:hover {
     text-decoration: underline;
 }
 
+.msgbox {
+    border:solid 1px #DEDEDE;
+    background:#EFEFEF;
+    color:#222222;
+    padding: 5px 0;
+    text-align:center;
+    width: 25%;
+    margin: 10px auto;
+    display: none;
+    font-size: 18px;
+}
+
+.info { background:#EFEFEF; }
+.warning { background-color: #fcf9ce; }
+.error { background-color: #f6cbca; }
+
 /* Start Page CSS */
 
 .dsts ul {

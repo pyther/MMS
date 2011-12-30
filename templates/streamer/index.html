@@ -9,12 +9,13 @@
         function changeChannel(stream) {
             url="/stream/"+stream+"/change/"+$('select#channels').val()+"/"
             var jqxhr = $.get(url, function() {})
-            .success(function() { alert("Channel Changed"); })
-            .error(function() { alert("FAILED to change channel!"); })
+            .success(function() { $('.msgbox').addClass("info").text('Channel Changed').fadeIn(1800).delay(5000).fadeOut(600);})
+            .error(function() { $('.msgbox').addClass("error").text('Failed to Change Channel').fadeIn(1800).delay(25000).fadeOut(600);})
         }
     </script>
 </head>
 <body>
+    <div class="msgbox"></div>
     <div id="content">
         <div id="main">
             <h1>Multimedia Stream Server</h1>
