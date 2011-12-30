@@ -28,7 +28,7 @@ def generateDst(dst):
         txt+='mux=ts}'
     return txt
 
-def vlcOpts(dstObjs):
+def vlcOpts(dstObjs, pidFile):
     # Sout Code
     sout='#duplicate{'+','.join(["dst="+generateDst(dst) for dst in dstObjs])+'}'
 
@@ -41,8 +41,7 @@ def vlcOpts(dstObjs):
     opts+=['--daemon']
 
     # Pid File
-    pidfile='/tmp/vlc-'+''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))+'.pid'
-    opts+=['--pidfile', pidfile]
+    opts+=['--pidfile', pidFile]
 
     #Sout
     opts+=['--sout', sout]
@@ -55,7 +54,8 @@ def startStream(device, dstObjs, frequency=None, program=None, modulation=None):
     vlcCmd=[vlcBin]
 
     opts=[]
-    opts+=vlcOpts(dstObjs)
+    pidFile='/tmp/vlc-'+''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))+'.pid'
+    opts+=vlcOpts(dstObjs, pidFile)
 
     # DVB Device
     if frequency and program and modulation:
