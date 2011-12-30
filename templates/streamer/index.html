@@ -47,9 +47,9 @@
                                 <td>{{ stream.fileName }}</td>
                             {% endif %}
                             <td>
-                            {% for dst in stream.dstNames %}
-                            {{ dst }}</br>
-                            {% endfor %}
+                                <ul class="dstlist">
+                                    {% for dst in stream.dstNames %}<li>{{ dst }}</li>{% endfor %}
+                                </ul>
                             </td>
                             <td>{{stream.time}}</td>
                             <td><b><a href="/stream/{{stream.id}}/stop/">X</a></b></td>
