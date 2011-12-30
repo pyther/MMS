@@ -12,7 +12,6 @@
 
         var url="/json/?source=" + $("select#id_sources").val();
         $.getJSON(url, function(data) {
-            var type = data.type
             // Show Channels if we have channels
             if (data.channels.length > 0) {
                 document.getElementById('id_channels').length = 0;
@@ -29,7 +28,7 @@
                    $('select#id_files').append($("<option></option>").attr("value",file).text(file));
                 });
                 $("#filesWrapper").show();
-                $("#sourcesWrapper").show();
+                $("#destinationsWrapper").show();
             }
             else {
                 $("#destinationsWrapper").show();

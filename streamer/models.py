@@ -49,6 +49,7 @@ class ActiveStream(models.Model):
     pid = models.IntegerField()
     sourceId = models.IntegerField()
     channelId = models.CharField(max_length=5,blank=True)
+    fileName = models.CharField(max_length=255, blank=True)
     dstIds = models.CharField(max_length=200)
     time = models.DateTimeField()
 

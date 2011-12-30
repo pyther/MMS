@@ -22,7 +22,7 @@
                 <table id="streamTable">
                     <tr>
                         <th>Source</th>
-                        <th>Channel</th>
+                        <th>Channel / File</th>
                         <th>Destination(s)</th>
                         <th>Start Time</th>
                         <th>Stop</th>
@@ -44,7 +44,7 @@
                                 </select>
                                 </td>
                             {% else %}
-                                <td></td>
+                                <td>{{ stream.fileName }}</td>
                             {% endif %}
                             <td>
                             {% for dst in stream.dstNames %}

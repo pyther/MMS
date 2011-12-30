@@ -53,9 +53,10 @@ class StreamForm(forms.Form):
         return dstObjs
 
 class StreamInfo:
-    def __init__(self, sourceName, channelId, dstNames, time, id, channels):
+    def __init__(self, sourceName, channelId, fileName, dstNames, time, id, channels):
         self.sourceName = sourceName
         self.channelId = channelId
+        self.fileName = fileName
         self.dstNames = dstNames
         self.time = time
         self.id = id
@@ -69,12 +70,13 @@ def index(request):
     # Go through each Stream and get some information about it
     streams=[]
     for stream in ActiveStream.objects.all():
-        source_obj=Source.objects.get(id=stream.sourceId)
-        sourceID=source_obj.id
-        sourceName=source_obj.name
+        sObj=Source.objects.get(id=stream.sourceId)
+        sourceID=sObj.id
+        sourceName=sObj.name
+        fileName=stream.fileName
 
         # Get the source Channels
-        cobj=Channel.objects.filter(channelList=source_obj.channelList)
+        cobj=Channel.objects.filter(channelList=sObj.channelList)
         channels=cobj.extra(select={"decimal": "CAST(number as DECIMAL)"}).order_by("decimal")
 
         # Store channelID if set
@@ -91,7 +93,7 @@ def index(request):
         starttime=stream.time
         id=stream.id
 
-        streams.append(StreamInfo(sourceName, channelID, dstNames, starttime, id, channels))
+        streams.append(StreamInfo(sourceName, channelID, fileName, dstNames, starttime, id, channels))
     return render_to_response('streamer/index.html', {'streams':streams})
 
 # Allows user to start the stream
@@ -109,6 +111,11 @@ def start(request):
 
             # File Info
             file = form.cleaned_data['files']
+
+            if file:
+                fileName=os.path.split(file)[-1]
+            else:
+                fileName=''
 
             if source_obj.channelList:
                 channelId = form.cleaned_data['channels']
@@ -138,7 +145,7 @@ def start(request):
             dstIds=','.join([ str(dst.id) for dst in dstObjs ])
 
             # Temporary PID
-            s = ActiveStream(pid=pid, sourceId=sId, channelId=channelId, dstIds=dstIds, time=datetime.datetime.now())
+            s = ActiveStream(pid=pid, sourceId=sId, channelId=channelId, fileName=fileName, dstIds=dstIds, time=datetime.datetime.now())
             s.save()
             #return HttpResponse(str(pid))
             return HttpResponseRedirect(reverse('streamer.views.index'))
@@ -150,15 +157,15 @@ def start(request):
 def json(request):
     if request.method == "GET" and request.GET.has_key('source') and request.GET.get(u'source'):
         id_source = request.GET.get(u'source')
-        source_obj = get_object_or_404(Source, id=id_source)
-        source_type = str(source_obj.type).lower()
+        sObj = get_object_or_404(Source, id=id_source)
+        sType = str(sObj.type).lower()
 
         # If we have a file source type - get list of files
         # If a channel list is defined - get list of channels
         files=[]
         channels=[]
-        if source_type == "file":
-            path = os.path.normpath(source_obj.path)
+        if sType == "file":
+            path = os.path.normpath(sObj.device)
 
             if os.path.isdir(path):
                 for file in os.listdir(path):
@@ -169,10 +176,10 @@ def json(request):
                     except:
                         pass
         # If source has a channelList associated with it
-        elif source_obj.channelList:
+        elif sObj.channelList:
             # Select channels in Channel List
             # Order channels by number
-            cobj=Channel.objects.filter(channelList=source_obj.channelList)
+            cobj=Channel.objects.filter(channelList=sObj.channelList)
             # Sort by Decimal Order
             cobj=cobj.extra(select={"decimal": "CAST(number as DECIMAL)"}).order_by("decimal")
             #for c in .order_by('number'):
@@ -185,7 +192,7 @@ def json(request):
     # Sort Files
     files=sorted(files)
 
-    json = simplejson.dumps({'type':source_type,'files':files,'channels':channels})
+    json = simplejson.dumps({'files':files,'channels':channels})
     return HttpResponse(json, mimetype='application/json')
 
 def change(request, stream_id, channelId):
