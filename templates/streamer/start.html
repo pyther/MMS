@@ -13,7 +13,8 @@
         var url="/json/?source=" + $("select#id_sources").val();
         $.getJSON(url, function(data) {
             var type = data.type
-            if (type=="ivtv" || type=="dvb") {
+            // Show Channels if we have channels
+            if (data.channels.length > 0) {
                 document.getElementById('id_channels').length = 0;
                 $.each(data.channels, function(i, channel) {
                     $('select#id_channels').append($("<option></option>").attr("value",channel.id).text(channel.name));
@@ -21,7 +22,8 @@
                 $("#channelsWrapper").show();
                 $("#destinationsWrapper").show();
             }
-            else if (type=="file") {
+            // Show Files if we have a list of files
+            else if (data.files.length > 0) {
                 document.getElementById('id_files').length = 0;
                 $.each(data.files, function(id, file) {
                    $('select#id_files').append($("<option></option>").attr("value",file).text(file));

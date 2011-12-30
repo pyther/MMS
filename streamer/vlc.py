@@ -88,7 +88,7 @@ def startStream(device, dstObjs, frequency=None, program=None, modulation=None):
     return str(pid);
 
 # We only have support for PVR devices
-def v4l2(cinput, device):
+def v4l2ctl(cinput, device):
     cmd=['/usr/local/bin/v4l2-ctl', '-i', cinput, '-d', device]
     if DEBUG_CMD:
         print(' '.join(cmd))

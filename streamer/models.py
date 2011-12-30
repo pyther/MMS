@@ -27,7 +27,7 @@ class Channel(models.Model):
 
 class Source(models.Model):
     name = models.CharField(max_length=200)
-    type = models.CharField(max_length=16, choices = make_choice(["ivtv", "dvb", "file", "v4l2"]))
+    type = models.CharField(max_length=16, choices = make_choice(["ivtv", "dvb", "file"]))
     device = models.CharField(max_length=200)
     input = models.CharField(max_length=20, blank=True)
     channelList = models.ForeignKey('ChannelList', null=True, blank=True)

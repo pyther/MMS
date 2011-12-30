@@ -126,12 +126,11 @@ def start(request):
                 #pid=9999
                 pid=vlc.startStream(mediafile, dstObjs)
             elif sType == "ivtv":
-                vlc.v4l2(sInput, sDevice)
-                vlc.ivtvTune(sDevice, c.number, c.modulation)
-                pid=vlc.startStream(sDevice, dstObjs)
-            elif sType == "v4l2":
-                vlc.v4l2(sInput, sDevice)
-                pid=vlc.startStream(sDevice, dstObjs)
+                vlc.v4l2ctl(sInput, sDevice)
+                if channelId:
+                    vlc.ivtvTune(sDevice, c.number, c.modulation)
+                pvrDevice="pvr:/"+sDevice
+                pid=vlc.startStream(pvrDevice, dstObjs)
             elif sType == "dvb":
                 pid=vlc.startStream(sDevice, dstObjs, c.frequency, c.program, c.modulation)
 
