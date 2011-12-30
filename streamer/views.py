@@ -12,6 +12,7 @@ from django.conf import settings
 import vlc
 import datetime
 import os
+import time
 
 DEBUG_CMD = settings.DEBUG_CMD
 
@@ -218,7 +219,16 @@ def change(request, stream_id, channelId):
         if DEBUG_CMD:
             print "Kill " + str(streamObj.pid)
         else:
+            # Issue Kill Command
+            # Wait 10 seconds for VLC to close
             os.kill(streamObj.pid, 15)
+            fin_time = time.time() + 10 # wait a max of 10 seconds
+            while time.time() < fin_time:
+                try:
+                    os.kill(streamObj.pid,0)
+                except OSError:
+                    break
+                time.sleep(0.1)
 
         # Start Stream
         pid=vlc.startStream(sDevice, dstObjs, c.frequency, c.program, c.modulation)
