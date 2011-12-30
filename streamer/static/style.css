@@ -69,6 +69,7 @@ a:hover {
 
 .dsts ul label {
     float: none;
+    font-weight: normal;
 }
 
 .dsts {
