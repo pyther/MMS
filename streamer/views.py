@@ -53,9 +53,9 @@ class StreamForm(forms.Form):
         return dstObjs
 
 class StreamInfo:
-    def __init__(self, sourceName, channelID, dstNames, time, id, channels):
+    def __init__(self, sourceName, channelId, dstNames, time, id, channels):
         self.sourceName = sourceName
-        self.channelID = channelID
+        self.channelId = channelId
         self.dstNames = dstNames
         self.time = time
         self.id = id
@@ -79,7 +79,7 @@ def index(request):
 
         # Store channelID if set
         try:
-            channelID=int(stream.channel)
+            channelID=int(stream.channelId)
         except:
             channelID=''
 
