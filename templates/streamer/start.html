@@ -51,47 +51,33 @@
     <div id="content" style="width: 500px;">
         <div id="main">
             <h1>Start Stream</h1>
-            {{ form.destinations.errors }}
             {% if error_msg %}<p style="color: red;"><strong>Failed: {{ error_msg }}</strong></p>{% endif %}
             <form action="." method="post">
-                {% csrf_token %}
                 {{ form.non_field_errors }}
-                <table id="startTable">
-                <tr>
-                    <th>
-                        <label for="id_sources">Sources:</label>
-                    </th>
-                    <td>
-                        {{ form.sources }}
-                    </td>
-                </tr>
-                <tr id="channelsWrapper">
-                    <th>
-                        <label for="id_channels">Channels:</label>
-                    </th>
-                    <td>
-                        {{ form.channels }}
-                    </td>
-                </tr>
-                <tr id="filesWrapper">
-                    <th>
-                        <label for="id_files">Files:</label>
-                    </th>
-                    <td>
-                        {{ form.files }}
-                    </td>
-                </tr>
-                <tr id="destinationsWrapper">
-                    <th>
-                        <label>Destinations:</label>
-                    </th>
-                    <td>
-                        {{ form.destinations }}
-                    </td>
-                </tr>
-                </table>
-                <br/>
-                <input type="submit" value="Start Stream" />
+                {% csrf_token %}
+                <div class="sourcesWrapper">
+                    {{ form.sources.errors }}
+                    <label for="id_sources">Sources:</label>
+                    {{ form.sources }}
+                </div>
+                <div id="channelsWrapper">
+                    {{ form.channels.errors }}
+                    <label for="id_channels">Channels:</label>
+                    {{ form.channels }}
+                </div>
+                <div id="filesWrapper">
+                    {{ form.files.errors }}
+                    <label for="id_files">Files:</label>
+                    {{ form.files }}
+                </div>
+                <div id="destinationsWrapper">
+                    {{ form.destinations.errors }}
+                    <label>Destinations:</label>
+                    <fieldset class="dsts">
+                    {{ form.destinations }}
+                    </fieldset>
+                </div>
+                <p id="submitbutton"><input type="submit" value="Start Stream" /></p>
             </form>
         </div>
     </div>

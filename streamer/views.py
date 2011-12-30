@@ -4,6 +4,7 @@ from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadReque
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ValidationError
 from streamer.models import Channel, Source, Destination, ActiveStream
 from django.utils import simplejson
 from django import forms
@@ -16,7 +17,7 @@ class ChoiceFieldNoValidation(forms.ChoiceField):
     def validate(self, value):
         pass
 
-class SimpleStreamForm(forms.Form):
+class StreamForm(forms.Form):
     sources = forms.ModelChoiceField(queryset=Source.objects.all().order_by('name'))
     channels = ChoiceFieldNoValidation(required=False)
     files = ChoiceFieldNoValidation(required=False)
@@ -26,6 +27,27 @@ class SimpleStreamForm(forms.Form):
         initial=Destination.objects.filter(default=True),
         error_messages={'required': 'At least one destination must be selected'}
     )
+
+    # Ensures source isn't already in use
+    def clean_sources(self):
+        s = self.cleaned_data['sources']
+
+        if not s.type == 'file':
+            for obj in ActiveStream.objects.all():
+                if obj.sourceInUse(s.id):
+                    raise ValidationError("%s is in USE!" % s.name)
+
+        return s
+
+    # Makes sure destinations selected aren't being used
+    def clean_destinations(self):
+        dstObjs = self.cleaned_data['destinations']
+
+        for dst in dstObjs:
+            for obj in ActiveStream.objects.all():
+                if obj.dstInUse(str(dst.id)):
+                    raise ValidationError("%s is in USE!" % dst.name)
+        return dstObjs
 
 class StreamInfo:
     def __init__(self, sourceName, channelID, dstNames, time, id, channels):
@@ -72,7 +94,7 @@ def index(request):
 # Allows user to start the stream
 def start(request):
     if request.method == 'POST':
-        form = SimpleStreamForm(request.POST)
+        form = StreamForm(request.POST)
         if form.is_valid():
             # Source Info
             source_obj = form.cleaned_data['sources']
@@ -84,29 +106,15 @@ def start(request):
 
             # File Info
             file = form.cleaned_data['files']
-            channelID = form.cleaned_data['channels']
 
-            c=Channel.objects.get(id=channelID)
+            if source_obj.channelList:
+                channelId = form.cleaned_data['channels']
+                c=Channel.objects.get(id=channelId)
+            else:
+                channelId = ''
 
             # Stream Info
             dstObjs = form.cleaned_data['destinations']
-
-            # Sanity Checks - Make sure there isn't another stream going that uses the same resources
-            if sType != "file":
-                try:
-                    ActiveStream.objects.get(sourceId=sId)
-                except ActiveStream.DoesNotExist:
-                    pass
-                else:
-                    msg="This Source is currently being USED!"
-                    return render_to_response('streamer/start.html', {'form':form,'error_msg':msg}, context_instance=RequestContext(request))
-
-
-            for dst in dstObjs:
-                for obj in ActiveStream.objects.all():
-                    if obj.hasOutput(str(dst.id)):
-                        msg="Stream is in USE!"
-                        return render_to_response('streamer/start.html', {'form':form,'error_msg':msg}, context_instance=RequestContext(request))
 
             # Tune Capture Card and Start Stream
             # Handle Different Source Types
@@ -128,12 +136,12 @@ def start(request):
             dstIds=','.join([ str(dst.id) for dst in dstObjs ])
 
             # Temporary PID
-            s = ActiveStream(pid=pid, sourceId=sId, channelId=c.number, dstIds=dstIds, time=datetime.datetime.now())
+            s = ActiveStream(pid=pid, sourceId=sId, channelId=channelId, dstIds=dstIds, time=datetime.datetime.now())
             s.save()
             #return HttpResponse(str(pid))
             return HttpResponseRedirect(reverse('streamer.views.index'))
     else:
-        form = SimpleStreamForm()
+        form = StreamForm()
 
     return render_to_response('streamer/start.html', {'form':form,}, context_instance=RequestContext(request))
 

@@ -10,12 +10,17 @@ class ChannelList(models.Model):
         return str(self.name)
 
 class Channel(models.Model):
+    MODULATION_CHOICES = (
+        ('us-cable', 'us-cable'),
+        ('256', 'QAM-256'),
+    )
+
     number = models.CharField(max_length=6)
     name = models.CharField(max_length=200, blank=True)
     frequency = models.CharField(max_length=10, blank=True)
     program = models.CharField(max_length=2, blank=True)
-    modulation = models.CharField(max_length=10, blank=True)
-    channelList = models.ForeignKey('channelList')
+    modulation = models.CharField(max_length=10, choices = MODULATION_CHOICES)
+    channelList = models.ForeignKey('channelList', blank=True)
 
     def __unicode__(self):
         return str(self.number) + " - " + self.name
@@ -47,11 +52,17 @@ class ActiveStream(models.Model):
     dstIds = models.CharField(max_length=200)
     time = models.DateTimeField()
 
-    def hasOutput(self, x):
+    # Source in Use
+    def sourceInUse(self, x):
+        if x == self.sourceId:
+            return True
+        return False
+
+    # Desintation in Use? - Return True or False
+    def dstInUse(self, x):
         ids=self.dstIds.split(',')
         for id in ids:
-            if x == id:
-                return True
+            if x == id: return True
         return False
 
 class Setting(models.Model):
